@@ -35,32 +35,32 @@ void BitcoinExchange::loadDatabase(std::string const &filename)
 		_rates[date] = rate;
 	}
 }
-static std::string trim(const std::string &s)
+static std::string trim(const std::string &str)
 {
 	size_t start = 0;
-	while (start < s.size() && (s[start] == ' ' || s[start] == '\t'))
+	while (start < str.size() && (str[start] == ' ' || str[start] == '\t'))
 		start++;
-	size_t end = s.size();
-	while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t'))
+	size_t end = str.size();
+	while (end > start && (str[end - 1] == ' ' || str[end - 1] == '\t'))
 		end--;
-	return s.substr(start, end - start);
+	return str.substr(start, end - start);
 }
 
-static bool isNumber(const std::string &s)
+static bool isNumber(const std::string &str)
 {
 	size_t i = 0;
 	bool hasDigit = false;
 	bool hasDot = false;
 
-	if (s.empty())
+	if (str.empty())
 		return (false);
-	if (s[i] == '+' || s[i] == '-')
+	if (str[i] == '+' || str[i] == '-')
 		i++;
-	for (; i < s.size(); i++)
+	for (; i < str.size(); i++)
 	{
-		if (s[i] >= '0' && s[i] <= '9')
+		if (str[i] >= '0' && str[i] <= '9')
 			hasDigit = true;
-		else if (s[i] == '.')
+		else if (str[i] == '.')
 		{
 			if (hasDot)
 				return (false);
@@ -70,6 +70,34 @@ static bool isNumber(const std::string &s)
 			return (false);
 	}
 	return (hasDigit);
+}
+
+double BitcoinExchange::getRateForDate(std::string const &date) const
+{
+	std::map<std::string, double>::const_iterator it = _rates.lower_bound(date);
+	
+	if (it != _rates.end() && it->first == date)
+		return (it->second);
+	if (it == _rates.begin())
+		return (-1.0);
+	--it;
+	return (it->second);
+}
+
+static bool	isValidDate(const std::string &date)
+{
+	if (date.size() != 10)
+		return (false);
+	if (date[4] != '-' || date[7] != '-')
+		return (false);
+	for (size_t i = 0; i < date.size(); i++)
+	{
+		if (i == 4 || i == 7)
+			continue;
+		if (date[i] < '0' || date[i] > '9')
+			return (false);
+	}
+	return (true);
 }
 
 void BitcoinExchange::processInput(std::string const &filename) const
@@ -112,18 +140,18 @@ void BitcoinExchange::processInput(std::string const &filename) const
 			std::cerr << "Error: too large a number." << std::endl;
 			continue;
 		}
-		std::cout << "date=[" << date << "] valueStr=[" << valueStr << "] value=" << value << std::endl;
+		if (!isValidDate(date))
+		{
+			std::cerr << "Error: bad input => " << date << std::endl;
+			continue;
+		}
+		double rate = getRateForDate(date);
+		if (rate < 0)
+		{
+			std::cerr << "Error: no data available for this date." << std::endl;
+			continue;
+		}
+		std::cout << date << " => " << value << " = " << value * rate << std::endl;
 	}
 }
 
-double BitcoinExchange::getRateForDate(std::string const &date) const
-{
-	std::map<std::string, double>::const_iterator it = _rates.lower_bound(date);
-	
-	if (it != _rates.end() && it->first == date)
-		return (it->second);
-	if (it == _rates.begin())
-		return (-1.0);
-	--it;
-	return (it->second);
-}
