@@ -6,11 +6,24 @@
 /*   By: ilsadi <ilsadi@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/02/01 16:24:48 by ilsadi            #+#    #+#             */
-/*   Updated: 2026/02/19 16:06:14 by ilsadi           ###   ########.fr       */
+/*   Updated: 2026/03/25 01:18:34 by ilsadi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "BitcoinExchange.hpp"
+
+static bool isLeapYear(int year)
+{
+	return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+}
+
+static int maxDaysInMonth(int month, int year)
+{
+	int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30 ,31 ,30, 31};
+	if (month == 2 && isLeapYear(year))
+		return (29);
+	return days[month - 1];
+}
 
 void BitcoinExchange::loadDatabase(std::string const &filename)
 {
@@ -97,6 +110,14 @@ static bool	isValidDate(const std::string &date)
 		if (date[i] < '0' || date[i] > '9')
 			return (false);
 	}
+	int year = std::atoi(date.substr(0, 4).c_str());
+	int month = std::atoi(date.substr(5, 2).c_str());
+	int day = std::atoi(date.substr(8, 2).c_str());
+	
+	if (month < 1 || month > 12)
+		return (false);
+	if (day < 1 || day > maxDaysInMonth(month, year))
+		return (false);
 	return (true);
 }
 
